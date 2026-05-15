@@ -1,0 +1,7 @@
+{
+  "name": "curalink",
+  "private": true,
+  "scripts": {
+    "dev": "node start-dev.js"
+  }
+}

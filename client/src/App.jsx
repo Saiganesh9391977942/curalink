@@ -4,6 +4,19 @@ import ChatWindow from "./components/ChatWindow";
 import InputBar from "./components/InputBar";
 import "./index.css";
 
+const API_URL = (import.meta.env.DEV ? "" : import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const apiPath = (path) => `${API_URL}${path}`;
+
+const getApiErrorMessage = (payload) => {
+  const detail = payload.detail || payload.error || "";
+
+  if (detail.includes("ECONNREFUSED") || detail.includes("127.0.0.1:8000")) {
+    return "The AI service is offline. Start or deploy the LLM service and set LLM_URL on the API server.";
+  }
+
+  return detail || "The server could not answer.";
+};
+
 let nextId = 0;
 const uid = () => `msg-${Date.now()}-${++nextId}`;
 
@@ -24,7 +37,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch(apiPath("/api/health"))
       .then((res) => setHealth(res.ok ? "online" : "offline"))
       .catch(() => setHealth("offline"));
 
@@ -50,7 +63,7 @@ function App() {
       setIsLoading(true);
 
       try {
-        const response = await fetch("/api/reason", {
+        const response = await fetch(apiPath("/api/reason"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -66,7 +79,7 @@ function App() {
 
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(payload.detail || payload.error || "The server could not answer.");
+          throw new Error(getApiErrorMessage(payload));
         }
 
         const assistantMsg = { id: uid(), role: "assistant", content: payload };
